@@ -91,8 +91,23 @@ window.onload = function() {
     updateAllUI();
     renderAttendance();
 
-    window.onUserReady = function() {
-        syncWeeklyStatsFromFirebase();
+window.onUserReady = async function() {
+        if (window.loadUserDataFromFirebase) {
+            const data = await window.loadUserDataFromFirebase();
+            if (data) {
+                if (data.coins !== undefined) gameState.coins = data.coins;
+                if (data.inventory) gameState.inventory = data.inventory;
+                if (data.equipped) gameState.equipped = data.equipped;
+                if (data.missions) gameState.missions = data.missions;
+                
+                const raw = data.weeklyFocusMinutes || [0,0,0,0,0,0,0];
+                gameState.weeklyStats.thisWeek = [raw[1], raw[2], raw[3], raw[4], raw[5], raw[6], raw[0]];
+                if (data.attendanceStreak !== undefined) gameState.attendance.streak = data.attendanceStreak;
+
+                updateAllUI();
+                renderAttendance();
+            }
+        }
     };
 
     const missionInput = document.getElementById('custom-mission-input');
