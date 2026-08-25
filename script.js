@@ -244,6 +244,10 @@ function toggleEquip(itemId) {
     }
     updateAllUI();
     renderInventory();
+
+    if (window.saveEquippedToFirebase) {
+        window.saveEquippedToFirebase(gameState.equipped);
+    }
 }
 
 function switchShopTab(tab) {
@@ -284,6 +288,8 @@ function buyItem(id, price) {
     alert("🛍️ 아이템을 구매했습니다!");
     updateAllUI();
     renderShop();
+    if (window.saveCoinsToFirebase) window.saveCoinsToFirebase(gameState.coins);
+    if (window.saveInventoryToFirebase) window.saveInventoryToFirebase(gameState.inventory);
 }
 
 function renderAttendance() {
@@ -380,6 +386,10 @@ function claimMission(id) {
         mission.completed = true;
         gameState.coins += 20;
         gainXP(35);
+
+        // 🔥 미션 상태 및 코인 저장 추가
+        if (window.saveMissionsToFirebase) window.saveMissionsToFirebase(gameState.missions);
+        if (window.saveCoinsToFirebase) window.saveCoinsToFirebase(gameState.coins);
     }
 }
 
@@ -390,11 +400,17 @@ function addCustomMission() {
     gameState.missions.push({ id: Date.now(), title: title, completed: false });
     input.value = "";
     updateAllUI();
+
+    // 🔥 미션 추가 저장 추가
+    if (window.saveMissionsToFirebase) window.saveMissionsToFirebase(gameState.missions);
 }
 
 function deleteMission(id) {
     gameState.missions = gameState.missions.filter(m => m.id !== id);
     updateAllUI();
+
+    // 🔥 미션 삭제 저장 추가
+    if (window.saveMissionsToFirebase) window.saveMissionsToFirebase(gameState.missions);
 }
 
 function adjustTargetTime(min) {
@@ -468,6 +484,11 @@ async function finishTimer() {
     }
 
     gameState.coins += gainedCoins;
+
+    if (window.saveCoinsToFirebase) {
+        window.saveCoinsToFirebase(gameState.coins);
+    }
+    
     alert(`🎉 ${mins}분 집중 완료!\n+${gainedXP} XP / +🪙 ${gainedCoins} 코인 획득!`);
     gainXP(gainedXP);
 }
