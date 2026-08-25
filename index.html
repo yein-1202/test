@@ -127,6 +127,26 @@
         });
         return newStreak;
     };
+    // 1. 코인 저장
+    window.saveCoinsToFirebase = async function(coins) {
+        if (!currentUser) return;
+        const userRef = doc(db, "users", currentUser.uid);
+        await updateDoc(userRef, { coins: coins });
+    };
+
+    // 2. 인벤토리 목록 저장
+    window.saveInventoryToFirebase = async function(inventory) {
+        if (!currentUser) return;
+        const userRef = doc(db, "users", currentUser.uid);
+        await updateDoc(userRef, { inventory: inventory });
+    };
+
+    // 3. 착용 중인 아이템 저장
+    window.saveEquippedToFirebase = async function(equipped) {
+        if (!currentUser) return;
+        const userRef = doc(db, "users", currentUser.uid);
+        await updateDoc(userRef, { equipped: equipped });
+    };
 </script>
 
 <body>
