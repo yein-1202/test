@@ -89,25 +89,24 @@ const shopItems = {
 window.onload = function() {
     startUsageTracking();
 
-    // Firebase 로그인 완료 신호를 받았을 때 실행되는 통합 로드 함수
-    window.onUserReady = async function() {
-        if (window.loadUserDataFromFirebase) {
-            const data = await window.loadUserDataFromFirebase();
-            if (data) {
-                // Firebase에 저장되어 있던 데이터로 gameState 업데이트
-                if (data.coins !== undefined) gameState.coins = data.coins;
-                if (data.inventory) gameState.inventory = data.inventory;
-                if (data.equipped) gameState.equipped = data.equipped;
-                if (data.missions) gameState.missions = data.missions;
-                
-                const raw = data.weeklyFocusMinutes || [0,0,0,0,0,0,0];
-                gameState.weeklyStats.thisWeek = [raw[1], raw[2], raw[3], raw[4], raw[5], raw[6], raw[0]];
-                if (data.attendanceStreak !== undefined) gameState.attendance.streak = data.attendanceStreak;
+    window.onload = function() {
+    startUsageTracking();
 
-                // 불러온 데이터로 화면 전체 다시 그리기
-                updateAllUI();
-                renderAttendance();
-            }
+    // Firebase 로그인 완료 후 불러온 데이터를 넘겨받는 함수
+    window.onUserReady = function(data) {
+        if (data) {
+            if (data.coins !== undefined) gameState.coins = data.coins;
+            if (data.inventory) gameState.inventory = data.inventory;
+            if (data.equipped) gameState.equipped = data.equipped;
+            if (data.missions) gameState.missions = data.missions;
+            
+            const raw = data.weeklyFocusMinutes || [0,0,0,0,0,0,0];
+            gameState.weeklyStats.thisWeek = [raw[1], raw[2], raw[3], raw[4], raw[5], raw[6], raw[0]];
+            if (data.attendanceStreak !== undefined) gameState.attendance.streak = data.attendanceStreak;
+
+            // 데이터 동기화 후 화면 전체 재갱신
+            updateAllUI();
+            renderAttendance();
         }
     };
 
