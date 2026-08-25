@@ -28,7 +28,7 @@
     const db = getFirestore(app);
     let currentUser = null;
 
-    // 로그인 상태 변화 감지
+// 🔒 로그인 상태 변화 감지 및 초기 데이터 생성
     onAuthStateChanged(auth, async (user) => {
         if (user) {
             currentUser = user;
@@ -36,18 +36,25 @@
             document.getElementById('auth-card').style.display = 'none';
             document.getElementById('app-content').style.display = 'block';
 
-            // Firestore에 유저 문서 없으면 새로 만들기
+            // Firestore에 유저 문서 없으면 기본 데이터셋으로 생성
             const userRef = doc(db, "users", user.uid);
             const snap = await getDoc(userRef);
             if (!snap.exists()) {
                 await setDoc(userRef, {
-                    weeklyFocusMinutes: [0, 0, 0, 0, 0, 0, 0], // 일~토
+                    weeklyFocusMinutes: [0, 0, 0, 0, 0, 0, 0], // 일~토 집중시간
                     attendanceStreak: 0,
-                    lastAttendanceDate: ""
+                    lastAttendanceDate: "",
+                    coins: 100, // 🪙 초기 코인
+                    inventory: ["hat_party", "acc_ribbon"], // 🎒 기본 보유 아이템
+                    equipped: { hat: "none", acc: "none", bg: "none" }, // 👗 초기 착용 상태
+                    missions: [ // 🌿 기본 일일 미션
+                        { id: 1, title: "아침 기상 후 물 한 잔 마시기 💧", completed: false },
+                        { id: 2, title: "스마트폰 내려두고 스트레칭 🧘", completed: false }
+                    ]
                 });
             }
 
-            if (window.onUserReady) window.onUserReady(); // script.js에 신호 보내기
+            if (window.onUserReady) window.onUserReady(); // script.js로 로드 완료 신호 보내기
         } else {
             currentUser = null;
             window.currentUser = null;
@@ -127,25 +134,40 @@
         });
         return newStreak;
     };
-    // 1. 코인 저장
+// 1. 파이어베이스에서 전체 유저 데이터 불러오기 (새로 추가됨)
+    window.loadUserDataFromFirebase = async function() {
+        if (!currentUser) return null;
+        const userRef = doc(db, "users", currentUser.uid);
+        const snap = await getDoc(userRef);
+        return snap.exists() ? snap.data() : null;
+    };
+
+    // 2. 코인 저장
     window.saveCoinsToFirebase = async function(coins) {
         if (!currentUser) return;
         const userRef = doc(db, "users", currentUser.uid);
         await updateDoc(userRef, { coins: coins });
     };
 
-    // 2. 인벤토리 목록 저장
+    // 3. 인벤토리 목록 저장
     window.saveInventoryToFirebase = async function(inventory) {
         if (!currentUser) return;
         const userRef = doc(db, "users", currentUser.uid);
         await updateDoc(userRef, { inventory: inventory });
     };
 
-    // 3. 착용 중인 아이템 저장
+    // 4. 착용 중인 아이템 저장
     window.saveEquippedToFirebase = async function(equipped) {
         if (!currentUser) return;
         const userRef = doc(db, "users", currentUser.uid);
         await updateDoc(userRef, { equipped: equipped });
+    };
+
+    // 5. 일일 미션 목록 및 완료 상태 저장 (새로 추가됨)
+    window.saveMissionsToFirebase = async function(missions) {
+        if (!currentUser) return;
+        const userRef = doc(db, "users", currentUser.uid);
+        await updateDoc(userRef, { missions: missions });
     };
 </script>
 
