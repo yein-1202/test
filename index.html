@@ -28,33 +28,40 @@
     const db = getFirestore(app);
     let currentUser = null;
 
-// 🔒 로그인 상태 변화 감지 및 초기 데이터 생성
+// 🔒 로그인 상태 변화 감지 및 데이터 동기화
     onAuthStateChanged(auth, async (user) => {
         if (user) {
             currentUser = user;
             window.currentUser = user;
-            document.getElementById('auth-card').style.display = 'none';
-            document.getElementById('app-content').style.display = 'block';
 
-            // Firestore에 유저 문서 없으면 기본 데이터셋으로 생성
             const userRef = doc(db, "users", user.uid);
-            const snap = await getDoc(userRef);
+            let snap = await getDoc(userRef);
+
+            // Firestore에 유저 문서 없으면 기본 데이터 생성
             if (!snap.exists()) {
                 await setDoc(userRef, {
-                    weeklyFocusMinutes: [0, 0, 0, 0, 0, 0, 0], // 일~토 집중시간
+                    weeklyFocusMinutes: [0, 0, 0, 0, 0, 0, 0],
                     attendanceStreak: 0,
                     lastAttendanceDate: "",
-                    coins: 100, // 🪙 초기 코인
-                    inventory: ["hat_party", "acc_ribbon"], // 🎒 기본 보유 아이템
-                    equipped: { hat: "none", acc: "none", bg: "none" }, // 👗 초기 착용 상태
-                    missions: [ // 🌿 기본 일일 미션
+                    coins: 100,
+                    inventory: ["hat_party", "acc_ribbon"],
+                    equipped: { hat: "none", acc: "none", bg: "none" },
+                    missions: [
                         { id: 1, title: "아침 기상 후 물 한 잔 마시기 💧", completed: false },
                         { id: 2, title: "스마트폰 내려두고 스트레칭 🧘", completed: false }
                     ]
                 });
             }
 
-            if (window.onUserReady) window.onUserReady(); // script.js로 로드 완료 신호 보내기
+            // 화면 표시 전환
+            document.getElementById('auth-card').style.display = 'none';
+            document.getElementById('app-content').style.display = 'block';
+
+            // script.js에 유저 데이터 전달
+            if (window.onUserReady) {
+                const userData = await window.loadUserDataFromFirebase();
+                window.onUserReady(userData);
+            }
         } else {
             currentUser = null;
             window.currentUser = null;
