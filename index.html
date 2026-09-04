@@ -6,207 +6,25 @@
     <title>지식의 정원 - 감성 공부방 🌿</title>
     <link rel="stylesheet" href="style.css">
 </head>
-
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } 
-        from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc, setDoc, updateDoc } 
-        from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-    const firebaseConfig = {
-        apiKey: "AIzaSyCwqkkod97NQ6n7refHH9P9rY0vjEBSMMk",
-        authDomain: "test2-b7ccb.firebaseapp.com",
-        projectId: "test2-b7ccb",
-        storageBucket: "test2-b7ccb.firebasestorage.app",
-        messagingSenderId: "1095135627775",
-        appId: "1:1095135627775:web:33fd7950f50d6d9ae43fca"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-    let currentUser = null;
-
-// 🔒 로그인 상태 변화 감지 및 데이터 동기화
-    onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            currentUser = user;
-            window.currentUser = user;
-
-            const userRef = doc(db, "users", user.uid);
-            let snap = await getDoc(userRef);
-
-            // Firestore에 유저 문서 없으면 기본 데이터 생성
-            if (!snap.exists()) {
-                await setDoc(userRef, {
-                    weeklyFocusMinutes: [0, 0, 0, 0, 0, 0, 0],
-                    attendanceStreak: 0,
-                    lastAttendanceDate: "",
-                    coins: 100,
-                    inventory: ["hat_party", "acc_ribbon"],
-                    equipped: { hat: "none", acc: "none", bg: "none" },
-                    missions: [
-                        { id: 1, title: "아침 기상 후 물 한 잔 마시기 💧", completed: false },
-                        { id: 2, title: "스마트폰 내려두고 스트레칭 🧘", completed: false }
-                    ]
-                });
-            }
-
-            // 화면 표시 전환
-            document.getElementById('auth-card').style.display = 'none';
-            document.getElementById('app-content').style.display = 'block';
-
-            // script.js에 유저 데이터 전달
-            if (window.onUserReady) {
-                const userData = await window.loadUserDataFromFirebase();
-                window.onUserReady(userData);
-            }
-        } else {
-            currentUser = null;
-            window.currentUser = null;
-            document.getElementById('auth-card').style.display = 'block';
-            document.getElementById('app-content').style.display = 'none';
-        }
-    });
-
-    // 회원가입 / 로그인 / 로그아웃
-    window.handleSignUp = async function() {
-        const email = document.getElementById('auth-email').value;
-        const pw = document.getElementById('auth-pw').value;
-        try {
-            await createUserWithEmailAndPassword(auth, email, pw);
-        } catch (err) { alert("회원가입 실패: " + err.message); }
-    };
-
-    window.handleLogin = async function() {
-        const email = document.getElementById('auth-email').value;
-        const pw = document.getElementById('auth-pw').value;
-        try {
-            await signInWithEmailAndPassword(auth, email, pw);
-        } catch (err) { alert("로그인 실패: " + err.message); }
-    };
-
-    window.handleLogout = function() {
-        signOut(auth);
-    };
-
-    window.handleLogoutClick = function() {
-        if (confirm("로그아웃 하시겠습니까?")) {
-            signOut(auth);
-        }
-    };
-
-    // 집중 시간 저장 (요일 인덱스: 일=0 ~ 토=6)
-    window.saveFocusMinutesToFirebase = async function(minutes) {
-        if (!currentUser) return;
-        const userRef = doc(db, "users", currentUser.uid);
-        const snap = await getDoc(userRef);
-        const data = snap.data();
-        let weeklyArr = data.weeklyFocusMinutes || [0,0,0,0,0,0,0];
-        const todayIndex = new Date().getDay();
-        weeklyArr[todayIndex] += minutes;
-        await updateDoc(userRef, { weeklyFocusMinutes: weeklyArr });
-        return weeklyArr;
-    };
-
-    // 최신 주간 데이터 불러오기
-    window.loadWeeklyStatsFromFirebase = async function() {
-        if (!currentUser) return null;
-        const userRef = doc(db, "users", currentUser.uid);
-        const snap = await getDoc(userRef);
-        return snap.exists() ? snap.data() : null;
-    };
-
-    // 출석 체크
-    window.checkAttendanceFirebase = async function() {
-        if (!currentUser) return;
-        const userRef = doc(db, "users", currentUser.uid);
-        const snap = await getDoc(userRef);
-        const data = snap.data();
-
-        const today = new Date();
-        const todayStr = today.toISOString().slice(0, 10);
-        const yesterday = new Date();
-        yesterday.setDate(today.getDate() - 1);
-        const yesterdayStr = yesterday.toISOString().slice(0, 10);
-
-        if (data.lastAttendanceDate === todayStr) return data.attendanceStreak; // 이미 오늘 체크함
-
-        let newStreak = (data.lastAttendanceDate === yesterdayStr) ? (data.attendanceStreak || 0) + 1 : 1;
-
-        await updateDoc(userRef, {
-            attendanceStreak: newStreak,
-            lastAttendanceDate: todayStr
-        });
-        return newStreak;
-    };
-// 1. 파이어베이스에서 전체 유저 데이터 불러오기 (새로 추가됨)
-    window.loadUserDataFromFirebase = async function() {
-        if (!currentUser) return null;
-        const userRef = doc(db, "users", currentUser.uid);
-        const snap = await getDoc(userRef);
-        return snap.exists() ? snap.data() : null;
-    };
-
-    // 2. 코인 저장
-    window.saveCoinsToFirebase = async function(coins) {
-        if (!currentUser) return;
-        const userRef = doc(db, "users", currentUser.uid);
-        await updateDoc(userRef, { coins: coins });
-    };
-
-    // 3. 인벤토리 목록 저장
-    window.saveInventoryToFirebase = async function(inventory) {
-        if (!currentUser) return;
-        const userRef = doc(db, "users", currentUser.uid);
-        await updateDoc(userRef, { inventory: inventory });
-    };
-
-    // 4. 착용 중인 아이템 저장
-    window.saveEquippedToFirebase = async function(equipped) {
-        if (!currentUser) return;
-        const userRef = doc(db, "users", currentUser.uid);
-        await updateDoc(userRef, { equipped: equipped });
-    };
-
-    // 5. 일일 미션 목록 및 완료 상태 저장 (새로 추가됨)
-    window.saveMissionsToFirebase = async function(missions) {
-        if (!currentUser) return;
-        const userRef = doc(db, "users", currentUser.uid);
-        await updateDoc(userRef, { missions: missions });
-    };
-</script>
-
 <body>
 
-    <!-- 🔒 로그인 카드 (로그인 전에만 보임) -->
-    <div id="auth-card" style="max-width:380px; margin:40px auto; padding:20px; background:#fff; border-radius:18px; box-shadow:0 4px 15px rgba(0,0,0,0.08); font-family:sans-serif;">
-        <h2 style="font-size:1.1rem; margin-bottom:12px;">🔒 로그인 / 회원가입</h2>
-        <input type="email" id="auth-email" placeholder="이메일 입력" style="width:100%; padding:8px; margin-bottom:6px; border:1px solid #ccc; border-radius:6px;">
-        <input type="password" id="auth-pw" placeholder="비밀번호 입력" style="width:100%; padding:8px; margin-bottom:10px; border:1px solid #ccc; border-radius:6px;">
-        <div style="display:flex; gap:8px;">
-            <button onclick="handleSignUp()" style="flex:1; padding:8px; border:none; border-radius:6px; background:#3b82f6; color:white; font-weight:bold; cursor:pointer;">회원가입</button>
-            <button onclick="handleLogin()" style="flex:1; padding:8px; border:none; border-radius:6px; background:#10b981; color:white; font-weight:bold; cursor:pointer;">로그인</button>
-        </div>
-    </div>
-
-    <!-- 기존 game-area 전체를 감싸는 컨테이너 (로그인 후에만 보임) -->
-    <div id="app-content" style="display:none;">
-
     <div class="game-area">
-        <!-- 상단 스탯 프로필 -->
         <div class="header">
             <div class="status-group">
                 <span class="level-badge" id="level-display">Lv.1</span>
                 <button class="level-reward-btn" onclick="showLevelRewardsInfo()" title="성장 로드맵 보기">🎁</button>
-                <div class="xp-bar-container"><div class="xp-bar" id="xp-bar"></div></div>
+                <div class="xp-bar-container">
+                    <div class="xp-bar" id="xp-bar"></div>
+                    <span class="xp-text" id="xp-text">0 / 120</span>
+                </div>
             </div>
-            <div class="coin-display" id="coin-display">🪙 100</div>
-            <button onclick="handleLogoutClick()" title="로그아웃" style="margin-left:8px; background:none; border:none; font-size:1.1rem; color:#94a3b8; cursor:pointer; padding:0 4px;">⏻</button>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <div class="coin-display" id="coin-display">🪙 300</div>
+                <button class="icon-btn" onclick="openAuthModal()" title="내 정보 / 로그인">👤</button>
+                <button class="icon-btn" onclick="openGroupModal()" title="공부 그룹">👥</button>
+            </div>
         </div>
 
-        <!-- 타이머 섹션 -->
         <div class="timer-section">
             <div class="timer-display" id="timer">00:10:00</div>
             <div class="timer-setup" id="timer-setup">
@@ -218,32 +36,27 @@
             </div>
         </div>
 
-        <!-- 식물 성장 룸 -->
         <div class="plant-room" id="room">
-            <div class="room-bg-layer" id="room-bg-layer"></div>
-            <div class="room-window"></div>
-            <div class="room-clock"><span>🕒</span></div>
-
-            <!-- 식물 오브젝트 (레벨에 따라 lv1.png ~ lv6.png 자동 변경) -->
-            <div class="plant-container">
-                <img id="plant-img" src="lv1.png" alt="성장하는 식물">
-                <div class="wearable-slot hat" id="wear-hat"></div>
-                <div class="wearable-slot acc" id="wear-acc"></div>
-            </div>
+            <div class="bg-decor-slot slot-1" id="bg-decor-1"></div>
+            <div class="bg-decor-slot slot-2" id="bg-decor-2"></div>
+            <div class="bg-decor-slot slot-3" id="bg-decor-3"></div>
 
             <div class="bubble" id="bubble-chat">오늘도 같이 무럭무럭 자라요! 🌱</div>
-            <div class="room-floor-banner" id="equipped-banner">🪴 씨앗 준비 단계</div>
+
+            <div class="plant-container">
+                <img id="plant-img" src="lv1.png" alt="성장하는 식물">
+                <div class="vde-decor-slot" id="vde-decor"></div>
+            </div>
+
+            <div class="room-floor-banner" id="equipped-banner">🪴 기본 식물 공간</div>
         </div>
 
-        <!-- 타이머 제어 버튼 -->
         <div class="timer-btn-group">
             <button class="timer-btn main-btn" id="timer-main-btn" onclick="handleMainTimerBtn()">집중 시작하기 ✨</button>
             <button class="timer-btn stop-btn" id="timer-stop-btn" onclick="resetTimer()" style="display: none;">포기하기 🛑</button>
         </div>
 
-        <!-- 스크롤 콘텐츠 영역 -->
         <div class="content-scroll-area">
-            <!-- 홈: 미션 목록 -->
             <section id="screen-home" class="screen active">
                 <div class="mission-section">
                     <div class="mission-title-bar">
@@ -260,21 +73,25 @@
                 </div>
             </section>
 
-            <!-- 보관함 -->
             <section id="screen-decor" class="screen">
+                <div class="shop-header">
+                    <button class="shop-pill active" id="decor-tab-all" onclick="switchDecorTab('all')">전체</button>
+                    <button class="shop-pill" id="decor-tab-bg" onclick="switchDecorTab('bg')">배경 테마</button>
+                    <button class="shop-pill" id="decor-tab-de" onclick="switchDecorTab('de')">배경 장식</button>
+                    <button class="shop-pill" id="decor-tab-vde" onclick="switchDecorTab('vde')">화분 장식</button>
+                </div>
                 <div class="item-grid" id="inventory-grid"></div>
             </section>
 
-            <!-- 코인숍 -->
             <section id="screen-shop" class="screen">
                 <div class="shop-header">
                     <button class="shop-pill active" id="tab-bg" onclick="switchShopTab('bg')">배경 테마</button>
-                    <button class="shop-pill" id="tab-acc" onclick="switchShopTab('acc')">화분 장식</button>
+                    <button class="shop-pill" id="tab-de" onclick="switchShopTab('de')">배경 장식</button>
+                    <button class="shop-pill" id="tab-vde" onclick="switchShopTab('vde')">화분 장식</button>
                 </div>
                 <div class="item-grid" id="shop-grid"></div>
             </section>
 
-            <!-- 출석 및 리포트 -->
             <section id="screen-attendance" class="screen">
                 <div class="attendance-card">
                     <div class="attendance-streak-header">
@@ -283,6 +100,7 @@
                     <div class="attendance-sub-text">
                         이번 달 총 <span id="monthly-count">1</span>회 출석 🎉
                     </div>
+                    <button class="attendance-action-btn" onclick="checkAttendanceFirebase()">오늘의 출석체크 하기 (+10 코인)</button>
                     <div class="reward-pills">
                         <div class="reward-pill" id="reward-3">🎁 3일 (+20)</div>
                         <div class="reward-pill locked" id="reward-7">🔒 7일 (+50)</div>
@@ -295,6 +113,7 @@
                         <span>📈 주간 집중 성장 리포트</span>
                     </div>
                     <div class="growth-summary" id="growth-summary">
+                        🚀 집중 시간이 지날수록 꽃이 피어납니다!
                     </div>
                     <div class="chart-legend">
                         <span class="legend-item"><span class="color-box last"></span>지난주</span>
@@ -312,7 +131,6 @@
                 </div>
             </section>
 
-            <!-- 설정 및 사용 시간 -->
             <section id="screen-settings" class="screen">
                 <div class="settings-title-header">⚙️ 설정 및 학습 측정</div>
                 
@@ -350,7 +168,6 @@
             </section>
         </div>
 
-        <!-- 하단 네비게이션 -->
         <div class="button-group">
             <button class="action-btn nav-home active" onclick="showScreen('home')">🏠<br>홈</button>
             <button class="action-btn nav-decor" onclick="showScreen('decor')">🎒<br>보관함</button>
@@ -360,9 +177,53 @@
         </div>
     </div>
 
+    <div id="auth-modal" class="level-up-overlay" style="display: none;">
+        <div class="roadmap-popup-content">
+            <div class="roadmap-header">
+                <h3>👤 로그인 / 회원가입</h3>
+                <button class="close-x-btn" onclick="closeAuthModal()">✕</button>
+            </div>
+            <div class="roadmap-scroll-body">
+                <div id="auth-unlogged">
+                    <input type="email" id="auth-email" class="modal-input" placeholder="이메일 입력">
+                    <input type="password" id="auth-password" class="modal-input" placeholder="비밀번호 입력">
+                    <input type="text" id="auth-nickname" class="modal-input" placeholder="닉네임 (회원가입 시)">
+                    <button class="modal-primary-btn" onclick="signUpFirebase()">회원가입</button>
+                    <button class="modal-secondary-btn" onclick="loginFirebase()">로그인</button>
+                </div>
+                <div id="auth-logged" style="display: none;">
+                    <p style="font-size: 0.85rem; margin-bottom: 12px; color: #334155;">
+                        <b id="user-display-email">user@email.com</b> 님, 환영합니다!
+                    </p>
+                    <button class="modal-logout-btn" onclick="logoutFirebase()">로그아웃</button>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- 로드맵 모달 -->
+    <div id="group-modal" class="level-up-overlay" style="display: none;">
+        <div class="roadmap-popup-content">
+            <div class="roadmap-header">
+                <h3>👥 공부 그룹 관리</h3>
+                <button class="close-x-btn" onclick="closeGroupModal()">✕</button>
+            </div>
+            <div class="roadmap-scroll-body">
+                <div class="group-section-box">
+                    <h4>새 그룹 생성</h4>
+                    <input type="text" id="group-name-input" class="modal-input" placeholder="그룹 이름">
+                    <input type="text" id="group-desc-input" class="modal-input" placeholder="그룹 설명">
+                    <button class="modal-primary-btn" onclick="createGroupFirebase()">그룹 생성하기</button>
+                </div>
+                <hr style="margin: 14px 0; border: none; border-top: 1px dashed #cbd5e1;">
+                <div class="group-section-box">
+                    <h4>기존 그룹 가입</h4>
+                    <input type="text" id="group-id-input" class="modal-input" placeholder="그룹 ID 입력">
+                    <button class="modal-secondary-btn" onclick="joinGroupFirebase()">그룹 가입하기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="roadmap-modal" class="level-up-overlay" style="display: none;">
         <div class="roadmap-popup-content">
             <div class="roadmap-header">
@@ -375,7 +236,6 @@
         </div>
     </div>
 
-    <!-- 레벨업 모달 -->
     <div id="level-up-modal" class="level-up-overlay" style="display: none;">
         <div class="level-up-content">
             <div style="font-size: 2rem; margin-bottom: 5px;">✨🎉✨</div>
@@ -390,6 +250,6 @@
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script type="module" src="script.js"></script>
 </body>
 </html>
