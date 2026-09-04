@@ -51,19 +51,22 @@ body {
     font-size: 0.8rem;
 }
 
-.level-reward-btn {
+.level-reward-btn, .icon-btn {
     border: none;
     background: none;
     font-size: 1.1rem;
     cursor: pointer;
+    padding: 2px;
 }
 
+/* XP 바 및 수치 외곽선 */
 .xp-bar-container {
     flex: 0.8;
-    height: 8px;
+    height: 14px;
     background: #e2e8f0;
-    border-radius: 4px;
+    border-radius: 7px;
     overflow: hidden;
+    position: relative;
 }
 
 .xp-bar {
@@ -71,6 +74,25 @@ body {
     background: #10b981;
     width: 0%;
     transition: width 0.3s ease;
+}
+
+.xp-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #ffffff;
+    pointer-events: none;
+    white-space: nowrap;
+
+    /* 상하좌우 1px 픽셀 그림자로 외곽선 표현 */
+    text-shadow: 
+        -1px -1px 0 #000,  
+         1px -1px 0 #000,
+        -1px  1px 0 #000,
+         1px  1px 0 #000;
 }
 
 .coin-display {
@@ -120,14 +142,52 @@ body {
 
 /* 식물 성장 룸 */
 .plant-room {
-    height: 190px;
+    height: 210px;
     background-color: #f7f3e9;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
     position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: flex-end;
+    padding-bottom: 16px;
+    transition: background 0.3s ease;
+}
+
+.bg-decor-slot {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
     justify-content: center;
-    transition: background-color 0.3s;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.bg-decor-slot img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12));
+}
+
+.bg-decor-slot.slot-1 { top: 18px; left: 12px; }
+.bg-decor-slot.slot-2 { top: 45px; left: 60%; transform: translateX(-50%); }
+.bg-decor-slot.slot-3 { top: 18px; right: 8px; }
+
+.bubble {
+    position: absolute;
+    top: 8px;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 4px 12px;
+    border-radius: 14px;
+    font-size: 0.72rem;
+    color: #334155;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    z-index: 3;
 }
 
 .plant-container {
@@ -137,6 +197,7 @@ body {
     display: flex;
     justify-content: center;
     align-items: flex-end;
+    z-index: 4;
 }
 
 #plant-img {
@@ -145,39 +206,34 @@ body {
     object-fit: contain;
 }
 
-.wearable-slot {
+.vde-decor-slot {
     position: absolute;
-    font-size: 1.6rem;
+    top: 35px;
+    left: -5px;
+    width: 56px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
 }
 
-.wearable-slot.hat {
-    top: -12px;
-}
-
-.wearable-slot.acc {
-    bottom: 4px;
-    right: -8px;
-}
-
-.bubble {
-    position: absolute;
-    top: 10px;
-    background: rgba(255, 255, 255, 0.9);
-    padding: 5px 12px;
-    border-radius: 14px;
-    font-size: 0.75rem;
-    color: #334155;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+.vde-decor-slot img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
 }
 
 .room-floor-banner {
     position: absolute;
-    bottom: 6px;
-    font-size: 0.75rem;
-    color: #64748b;
-    background: rgba(255, 255, 255, 0.7);
-    padding: 2px 10px;
-    border-radius: 10px;
+    bottom: 4px;
+    font-size: 0.7rem;
+    color: #475569;
+    background: rgba(255, 255, 255, 0.85);
+    padding: 2px 8px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
 /* 타이머 제어 버튼 */
@@ -198,17 +254,10 @@ body {
     cursor: pointer;
 }
 
-.main-btn {
-    background: #10b981;
-    color: white;
-}
+.main-btn { background: #10b981; color: white; }
+.stop-btn { background: #ef4444; color: white; }
 
-.stop-btn {
-    background: #ef4444;
-    color: white;
-}
-
-/* 화면 스크롤 영역 */
+/* 콘텐츠 영역 */
 .content-scroll-area {
     flex: 1;
     overflow-y: auto;
@@ -216,13 +265,8 @@ body {
     background: #ffffff;
 }
 
-.screen {
-    display: none;
-}
-
-.screen.active {
-    display: block;
-}
+.screen { display: none; }
+.screen.active { display: block; }
 
 /* 미션 섹션 */
 .mission-title-bar {
@@ -282,19 +326,35 @@ body {
     cursor: pointer;
 }
 
-.claim-btn.done {
-    background: #94a3b8;
+.claim-btn.done { background: #94a3b8; }
+.delete-btn { border: none; background: none; color: #94a3b8; margin-left: 4px; cursor: pointer; }
+
+/* 상점 및 보관함 카테고리 탭 */
+.shop-header {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 12px;
 }
 
-.delete-btn {
-    border: none;
-    background: none;
-    color: #94a3b8;
-    margin-left: 4px;
+.shop-pill {
+    flex: 1;
+    padding: 6px 0;
+    border: 1px solid #e2e8f0;
+    background: white;
+    border-radius: 8px;
+    font-size: 0.72rem;
     cursor: pointer;
+    text-align: center;
 }
 
-/* 그리드 레이아웃 (보관함 및 상점) */
+.shop-pill.active {
+    background: #10b981;
+    color: white;
+    border-color: #10b981;
+    font-weight: bold;
+}
+
+/* 아이템 카드 그리드 */
 .item-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -302,6 +362,7 @@ body {
 }
 
 .item-card {
+    position: relative;
     background: #f8fafc;
     border: 1px solid #e2e8f0;
     border-radius: 12px;
@@ -313,12 +374,32 @@ body {
     gap: 6px;
 }
 
+.slot-badge-icon {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    font-size: 1.1rem;
+    color: #10b981;
+    font-weight: bold;
+}
+
 .item-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-size: 2rem;
 }
 
+.item-icon img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
 .item-name {
-    font-size: 0.8rem;
+    font-size: 0.78rem;
     font-weight: 600;
     color: #334155;
 }
@@ -335,39 +416,8 @@ body {
     cursor: pointer;
 }
 
-.item-btn.equipped {
-    background: #ef4444;
-}
-
-.item-btn.bought {
-    background: #cbd5e1;
-    color: #64748b;
-    cursor: default;
-}
-
-/* 상점 탭 버튼 */
-.shop-header {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 12px;
-}
-
-.shop-pill {
-    flex: 1;
-    padding: 8px;
-    border: 1px solid #e2e8f0;
-    background: white;
-    border-radius: 8px;
-    font-size: 0.8rem;
-    cursor: pointer;
-}
-
-.shop-pill.active {
-    background: #10b981;
-    color: white;
-    border-color: #10b981;
-    font-weight: bold;
-}
+.item-btn.equipped { background: #ef4444; }
+.item-btn.bought { background: #cbd5e1; color: #64748b; cursor: default; }
 
 /* 출석 및 주간 리포트 */
 .attendance-card, .weekly-growth-card, .usage-card, .alert-setting-card {
@@ -390,6 +440,19 @@ body {
     margin-top: 2px;
 }
 
+.attendance-action-btn {
+    width: 100%;
+    margin-top: 8px;
+    padding: 8px 0;
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+
 .reward-pills {
     display: flex;
     gap: 6px;
@@ -405,10 +468,7 @@ body {
     font-weight: bold;
 }
 
-.reward-pill.locked {
-    background: #e2e8f0;
-    color: #64748b;
-}
+.reward-pill.locked { background: #e2e8f0; color: #64748b; }
 
 .calendar-title {
     font-size: 0.85rem;
@@ -447,9 +507,7 @@ body {
     font-weight: bold;
 }
 
-.day-cell.today {
-    border: 2px solid #f59e0b;
-}
+.day-cell.today { border: 2px solid #f59e0b; }
 
 .weekly-chart {
     display: flex;
@@ -482,19 +540,9 @@ body {
     border-radius: 3px 3px 0 0;
 }
 
-.bar.last-week {
-    background: #cbd5e1;
-}
-
-.bar.this-week {
-    background: #10b981;
-}
-
-.day-label {
-    font-size: 0.65rem;
-    color: #64748b;
-    margin-top: 4px;
-}
+.bar.last-week { background: #cbd5e1; }
+.bar.this-week { background: #10b981; }
+.day-label { font-size: 0.65rem; color: #64748b; margin-top: 4px; }
 
 /* 설정 화면 */
 .settings-title-header {
@@ -510,27 +558,10 @@ body {
     align-items: center;
 }
 
-.usage-label {
-    font-size: 0.75rem;
-    color: #64748b;
-}
-
-.usage-time-text {
-    font-size: 1rem;
-    font-weight: bold;
-    color: #1e293b;
-}
-
-.usage-status {
-    font-size: 0.65rem;
-    color: #10b981;
-}
-
-.usage-circle-percent {
-    font-size: 1.1rem;
-    font-weight: bold;
-    color: #10b981;
-}
+.usage-label { font-size: 0.75rem; color: #64748b; }
+.usage-time-text { font-size: 1rem; font-weight: bold; color: #1e293b; }
+.usage-status { font-size: 0.65rem; color: #10b981; }
+.usage-circle-percent { font-size: 1.1rem; font-weight: bold; color: #10b981; }
 
 .usage-progress-bar-bg {
     height: 6px;
@@ -577,13 +608,8 @@ body {
     font-weight: bold;
 }
 
-.check-icon {
-    display: none;
-}
-
-.alert-option-btn.active .check-icon {
-    display: inline;
-}
+.check-icon { display: none; }
+.alert-option-btn.active .check-icon { display: inline; }
 
 /* 하단 네비게이션 */
 .button-group {
@@ -608,7 +634,7 @@ body {
     font-weight: bold;
 }
 
-/* 모달 및 팝업 */
+/* 모달 및 팝업 스타일 */
 .level-up-overlay {
     position: absolute;
     inset: 0;
@@ -644,7 +670,7 @@ body {
     padding: 16px;
     border-radius: 18px;
     width: 85%;
-    max-height: 70%;
+    max-height: 75%;
     display: flex;
     flex-direction: column;
 }
@@ -676,13 +702,8 @@ body {
     opacity: 0.5;
 }
 
-.roadmap-step.achieved {
-    opacity: 1;
-}
-
-.roadmap-step.current {
-    font-weight: bold;
-}
+.roadmap-step.achieved { opacity: 1; }
+.roadmap-step.current { font-weight: bold; }
 
 .roadmap-node {
     width: 10px;
@@ -691,9 +712,7 @@ body {
     border-radius: 50%;
 }
 
-.roadmap-step.achieved .roadmap-node {
-    background: #10b981;
-}
+.roadmap-step.achieved .roadmap-node { background: #10b981; }
 
 .roadmap-card {
     background: #f8fafc;
@@ -701,4 +720,57 @@ body {
     border-radius: 10px;
     flex: 1;
     font-size: 0.75rem;
+}
+
+/* Firebase 추가 모달 폼 전용 스타일 */
+.modal-input {
+    width: 100%;
+    padding: 8px 10px;
+    margin-bottom: 8px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 0.8rem;
+}
+
+.modal-primary-btn {
+    width: 100%;
+    padding: 8px;
+    background: #10b981;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-bottom: 4px;
+    font-size: 0.8rem;
+}
+
+.modal-secondary-btn {
+    width: 100%;
+    padding: 8px;
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+
+.modal-logout-btn {
+    width: 100%;
+    padding: 8px;
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+
+.group-section-box h4 {
+    font-size: 0.8rem;
+    color: #475569;
+    margin-bottom: 6px;
 }
